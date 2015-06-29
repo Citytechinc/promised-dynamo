@@ -1,0 +1,15 @@
+{
+    "name": "promised-dynamo",
+    "version": "1.0.0",
+    "description": "A promise based wrapper around the DynamoDB AWS SDK",
+    "main": "dynamodb.js",
+    "author": "Paul Michelotti",
+    "license": "Apache-2.0",
+    "dependencies": {
+    "aws-sdk": "^2.1.36",
+    "q": "^1.4.1"
+    },
+    "publishConfig":{
+        "registry": "http://nexus.citytech.ctmsp.com/content/repositories/npm-private/"
+    }
+}
