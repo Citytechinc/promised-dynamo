@@ -83,7 +83,7 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
 };
 
 /**
- * Example Filter Definition (with all the bells and whistles)
+ * Example Condition Definition (with all the bells and whistles)
  *
  * {
  *   userId: 5, //where key = 5
@@ -112,10 +112,14 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
  *      STARTS_WITH: "The Best" //TODO: Functions like STARTS_WITH need to be implemented
  *   }
  * }
- * @param filterDefinition
- * @returns {{filterExpression, expressionAttributeNames: {}, expressionAttributeValues}}
+ *
+ * See http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html#Expressions.SpecifyingConditions.ConditionExpressions
+ * for more information concerning Condition Expressions
+ *
+ * @param conditionDefinition
+ * @returns {{conditionExpression, expressionAttributeNames: {}, expressionAttributeValues}}
  */
-var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
+var mapConditionDefinitionToConditionExpression = function( conditionDefinition ) {
 
     var expressionAttributeNames = {},
         namesForExpressionAttributes = {},
@@ -124,7 +128,7 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
         expressionAttributeValuesCount = 1,
         expressionAttributeNamesCount = 1;
 
-    var writeOperatorExpression = function( filterKey, operator, values ) {
+    var writeOperatorExpression = function( conditionKey, operator, values ) {
 
         switch( operator ) {
             case '=':
@@ -138,10 +142,10 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
                     expressionAttributeValues[ ':' + expressionAttributeValuesCount ] = values;
                     expressionAttributeValuesCount += 1;
                 }
-                return namesForExpressionAttributes[ filterKey ] + ' ' + operator + ' ' + valuesForExpressionAttributes[ values ];
+                return namesForExpressionAttributes[ conditionKey ] + ' ' + operator + ' ' + valuesForExpressionAttributes[ values ];
             case 'IN':
                 if ( !Array.isArray( values ) ) {
-                    throw Error( 'IN statement for key ' + filterKey + ' does not have an Array value' );
+                    throw Error( 'IN statement for key ' + conditionKey + ' does not have an Array value' );
                 }
 
                 var valuePlaceholders = [];
@@ -156,10 +160,10 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
                     valuePlaceholders.push( valuesForExpressionAttributes[ currentValue ] );
                 } );
 
-                return namesForExpressionAttributes[ filterKey ] + ' IN (' + valuePlaceholders.join( ', ' ) + ')';
+                return namesForExpressionAttributes[ conditionKey ] + ' IN (' + valuePlaceholders.join( ', ' ) + ')';
             case 'BETWEEN':
                 if ( !Array.isArray( values ) || values.length != 2 ) {
-                    throw Error( 'BETWEEN statement for key ' + filterKey + ' requires two values in an array' );
+                    throw Error( 'BETWEEN statement for key ' + conditionKey + ' requires two values in an array' );
                 }
 
                 var betweenValuePlaceholders = [];
@@ -174,7 +178,7 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
                     betweenValuePlaceholders.push( valuesForExpressionAttributes[ currentValue ] );
                 } );
 
-                return namesForExpressionAttributes[ filterKey ] + ' BETWEEN ' + betweenValuePlaceholders[ 0 ] + ' AND ' + betweenValuePlaceholders[ 1 ];
+                return namesForExpressionAttributes[ conditionKey ] + ' BETWEEN ' + betweenValuePlaceholders[ 0 ] + ' AND ' + betweenValuePlaceholders[ 1 ];
             case 'CONTAINS':
                 if ( !valuesForExpressionAttributes[ values ] ) {
                     valuesForExpressionAttributes[ values ] = ':' + expressionAttributeValuesCount;
@@ -182,9 +186,9 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
                     expressionAttributeValuesCount += 1;
                 }
 
-                return 'contains ( ' + namesForExpressionAttributes[ filterKey ] + ', ' + valuesForExpressionAttributes[ values ] + ' )';
+                return 'contains ( ' + namesForExpressionAttributes[ conditionKey ] + ', ' + valuesForExpressionAttributes[ values ] + ' )';
             default:
-                throw new Error( 'Invalid operator ' + operator + ' for key ' + filterKey );
+                throw new Error( 'Invalid operator ' + operator + ' for key ' + conditionKey );
         }
     };
 
@@ -199,16 +203,16 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
      *
      * Each operator in an operatorsDefinition is implicitly ANDed
      *
-     * @param filterKey
+     * @param conditionKey
      * @param operatorsDefinition
      */
-    var mapOperatorsObjectToFilterExpression = function( filterKey, operatorsDefinition ) {
+    var mapOperatorsObjectToConditionExpression = function( conditionKey, operatorsDefinition ) {
 
         var operations = [];
 
         for ( var currentOperator in operatorsDefinition ) {
             if ( operatorsDefinition.hasOwnProperty( currentOperator ) ) {
-                operations.push( writeOperatorExpression( filterKey, currentOperator, operatorsDefinition[ currentOperator ] ) );
+                operations.push( writeOperatorExpression( conditionKey, currentOperator, operatorsDefinition[ currentOperator ] ) );
             }
         }
 
@@ -220,38 +224,32 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
 
     };
 
-    var mapCompositeExpressionDefinitionToFilterExpression = function( compositionType, composedExpressionDefinitions ) {
+    var mapCompositeExpressionDefinitionToConditionExpression = function( compositionType, composedExpressionDefinitions ) {
 
         var expressions = [];
 
         composedExpressionDefinitions.forEach( function( currentComposedExpressionDefinition ) {
             var currentExpressions = [];
 
-            for ( var filterKey in currentComposedExpressionDefinition ) {
-                if ( currentComposedExpressionDefinition.hasOwnProperty( filterKey ) ) {
-                    currentExpressions.push( mapExpressionDefinitionToFilterExpression( filterKey, currentComposedExpressionDefinition[ filterKey ] ) );
+            for ( var conditionKey in currentComposedExpressionDefinition ) {
+                if ( currentComposedExpressionDefinition.hasOwnProperty( conditionKey ) ) {
+                    currentExpressions.push( mapExpressionDefinitionToConditionExpression( conditionKey, currentComposedExpressionDefinition[ conditionKey ] ) );
                 }
             }
 
-            /*
-             if ( expressions.length === 1 ) {
-             expressions.push( currentExpressions[ 0 ] );
-             } else { */
-            expressions.push( currentExpressions.join(' AND ') );
-            //}
         } );
 
         return '( ' + expressions.join( ' ' + compositionType + ' ' ) + ' )';
 
     };
 
-    var mapNotExpressionDefinitionToFilterExpression = function( expressionDefinition ) {
+    var mapNotExpressionDefinitionToConditionExpression = function( expressionDefinition ) {
 
         var expressions = [];
 
-        for ( var filterKey in expressionDefinition ) {
-            if ( expressionDefinition.hasOwnProperty( filterKey ) ) {
-                expressions.push( mapExpressionDefinitionToFilterExpression( filterKey, expressionDefinition[ filterKey ] ) );
+        for ( var conditionKey in expressionDefinition ) {
+            if ( expressionDefinition.hasOwnProperty( conditionKey ) ) {
+                expressions.push( mapExpressionDefinitionToConditionExpression( conditionKey, expressionDefinition[ conditionKey ] ) );
             }
         }
 
@@ -263,39 +261,39 @@ var mapFilterDefinitionToFilterExpression = function( filterDefinition ) {
 
     };
 
-    var mapExpressionDefinitionToFilterExpression = function( filterKey, expressionDefinition ) {
+    var mapExpressionDefinitionToConditionExpression = function( conditionKey, expressionDefinition ) {
 
         //Check if the key is a special key
-        if ( filterKey == 'AND' || filterKey == 'OR' ) {
-            return mapCompositeExpressionDefinitionToFilterExpression( filterKey, expressionDefinition );
+        if ( conditionKey == 'AND' || conditionKey == 'OR' ) {
+            return mapCompositeExpressionDefinitionToConditionExpression( conditionKey, expressionDefinition );
         }
-        if ( filterKey == 'NOT' ) {
-            return mapNotExpressionDefinitionToFilterExpression( expressionDefinition );
+        if ( conditionKey == 'NOT' ) {
+            return mapNotExpressionDefinitionToConditionExpression( expressionDefinition );
         }
 
-        if ( !namesForExpressionAttributes[ filterKey ] ) {
-            namesForExpressionAttributes[ filterKey ] = '#' + expressionAttributeNamesCount;
-            expressionAttributeNames[ '#' + expressionAttributeNamesCount ] = filterKey;
+        if ( !namesForExpressionAttributes[ conditionKey ] ) {
+            namesForExpressionAttributes[ conditionKey ] = '#' + expressionAttributeNamesCount;
+            expressionAttributeNames[ '#' + expressionAttributeNamesCount ] = conditionKey;
             expressionAttributeNamesCount += 1;
         }
 
         if ( typeof expressionDefinition === 'object' ) {
-            return mapOperatorsObjectToFilterExpression( filterKey, expressionDefinition );
+            return mapOperatorsObjectToConditionExpression( conditionKey, expressionDefinition );
         }
 
-        return writeOperatorExpression( filterKey, '=', expressionDefinition );
+        return writeOperatorExpression( conditionKey, '=', expressionDefinition );
 
     };
 
     var expressions = [];
-    for ( var filterKey in filterDefinition ) {
-        if ( filterDefinition.hasOwnProperty( filterKey ) ) {
-            expressions.push( mapExpressionDefinitionToFilterExpression( filterKey, filterDefinition[ filterKey ] ) );
+    for ( var conditionKey in conditionDefinition ) {
+        if ( conditionDefinition.hasOwnProperty( conditionKey ) ) {
+            expressions.push( mapExpressionDefinitionToConditionExpression( conditionKey, conditionDefinition[ conditionKey ] ) );
         }
     }
 
     return {
-        filterExpression: expressions.join( ' AND ' ),
+        conditionExpression: expressions.join( ' AND ' ),
         expressionAttributeNames: expressionAttributeNames,
         expressionAttributeValues: mapJavascriptObjectToDynamoObject( expressionAttributeValues )
     };
@@ -505,16 +503,16 @@ var DynamoDb = function( o, tables ) {
                         queryOptions.Limit = limit;
                         return queryable;
                     },
-                    filter: function( filterDefinition ) {
+                    filter: function( conditionDefinition ) {
                         if ( executed ) {
                             throw new Error( "Query may not be modified after execution" );
                         }
 
-                        var filterExpression = mapFilterDefinitionToFilterExpression( filterDefinition );
+                        var conditionExpression = mapConditionDefinitionToConditionExpression( conditionDefinition );
 
-                        queryOptions.FilterExpression = filterExpression.filterExpression;
-                        queryOptions.ExpressionAttributeNames = filterExpression.expressionAttributeNames;
-                        queryOptions.ExpressionAttributeValues = filterExpression.expressionAttributeValues;
+                        queryOptions.FilterExpression = conditionExpression.conditionExpression;
+                        queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames;
+                        queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues;
 
                         return queryable;
                     },
@@ -562,7 +560,7 @@ var DynamoDb = function( o, tables ) {
 
             },
 
-            scan: function( filterDefinition ) {
+            scan: function( conditionDefinition ) {
 
                 var executed = false;
 
@@ -572,11 +570,11 @@ var DynamoDb = function( o, tables ) {
                     TableName: currentTable
                 };
 
-                var filterExpression = mapFilterDefinitionToFilterExpression( filterDefinition );
+                var conditionExpression = mapConditionDefinitionToConditionExpression( conditionDefinition );
 
-                if (filterExpression.filterExpression) { queryOptions.FilterExpression = filterExpression.filterExpression; }
-                if (Object.keys(filterExpression.expressionAttributeNames).length > 0) { queryOptions.ExpressionAttributeNames = filterExpression.expressionAttributeNames; }
-                if (Object.keys(filterExpression.expressionAttributeValues).length > 0) { queryOptions.ExpressionAttributeValues = filterExpression.expressionAttributeValues; }
+                if (conditionExpression.conditionExpression) { queryOptions.FilterExpression = conditionExpression.conditionExpression; }
+                if (Object.keys(conditionExpression.expressionAttributeNames).length > 0) { queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames; }
+                if (Object.keys(conditionExpression.expressionAttributeValues).length > 0) { queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues; }
 
                 var scannable = {
                     limit: function( limit ) {
@@ -616,7 +614,24 @@ var DynamoDb = function( o, tables ) {
 
             },
 
-            putItem: function( item ) {
+            /**
+             *
+             * Valid Options
+             *
+             * <ul>
+             *     <li>conditionExpression - a Condition Expression Definition which must resolve to true for the Put to be applied</li>
+             *     <li>returnConsumedCapacity - one of INDEXES, TOTAL, or NONE.  Defaults to NONE</li>
+             *     <li>returnItemCollectionMetrics - one of SIZE or NONE.  Defaults to NONE</li>
+             *     <li>returnValues - one of NONE, ALL_OLD, UPDATED_OLD, ALL_NEW, UPDATED_NEW</li>
+             * </ul>
+             *
+             * @param item Object representing the item to Put.  Required fields follow the attribute requirements of the SDK putItem call
+             * @param o Options object - see Valid Options in the description
+             * @returns {*}
+             */
+            putItem: function( item, o ) {
+
+                var options = o || {};
 
                 return tableDefinitionPromise.then( function( tableDefinition ) {
                     var deferred = Q.defer();
@@ -625,6 +640,26 @@ var DynamoDb = function( o, tables ) {
                         Item: mapJavascriptObjectToDynamoObject( item ),
                         TableName: tableDefinition.name
                     };
+
+                    if ( options.conditionExpression ) {
+                        var conditionExpression = mapConditionDefinitionToConditionExpression( options.conditionExpression );
+
+                        queryOptions.ConditionExpression = conditionExpression.conditionExpression;
+                        queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames;
+                        queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues;
+                    }
+
+                    if ( options.returnConsumedCapacity ) {
+                        queryOptions.ReturnConsumedCapacity = options.returnConsumedCapacity;
+                    }
+
+                    if ( options.returnItemCollectionMetrics ) {
+                        queryOptions.ReturnItemCollectionMetrics = options.returnItemCollectionMetrics;
+                    }
+
+                    if ( options.returnValues ) {
+                        queryOptions.ReturnValues = options.returnValues;
+                    }
 
                     dynamodb.putItem( queryOptions, function( err, data ) {
                         if ( err ) {
@@ -721,6 +756,26 @@ var DynamoDb = function( o, tables ) {
         }
     } );
 
+};
+
+
+DynamoDb.consumedCapacityOptions = {
+    "INEXES": "INDEXES",
+    "TOTAL": "TOTAL",
+    "NONE": "NONE"
+};
+
+DynamoDb.itemCollectionMetricsOptions = {
+    "SIZE": "SIZE",
+    "NONE": "NONE"
+};
+
+DynamoDb.valuesOptions = {
+    "NONE": "NONE",
+    "ALLOLD": "ALL_OLD",
+    "UPDATEDOLD": "UPDATED_OLD",
+    "ALLNEW": "ALL_NEW",
+    "UPDATEDNEW": "UPDATED_NEW"
 };
 
 module.exports = function( o, tables ) {
