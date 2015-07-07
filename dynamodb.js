@@ -292,6 +292,8 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition 
         }
     }
 
+    console.log( expressions.join( ' AND ' ) );
+
     return {
         conditionExpression: expressions.join( ' AND ' ),
         expressionAttributeNames: expressionAttributeNames,
@@ -511,8 +513,14 @@ var DynamoDb = function( o, tables ) {
                         var conditionExpression = mapConditionDefinitionToConditionExpression( conditionDefinition );
 
                         queryOptions.FilterExpression = conditionExpression.conditionExpression;
-                        queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames;
-                        queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues;
+
+                        if ( Object.keys( conditionExpression.expressionAttributeNames).length > 0 ) {
+                            queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames;
+                        }
+                        if ( Object.keys( conditionExpression.expressionAttributeValues).length > 0 ) {
+                            queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues;
+                        }
+
 
                         return queryable;
                     },
@@ -645,8 +653,13 @@ var DynamoDb = function( o, tables ) {
                         var conditionExpression = mapConditionDefinitionToConditionExpression( options.conditionExpression );
 
                         queryOptions.ConditionExpression = conditionExpression.conditionExpression;
-                        queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames;
-                        queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues;
+
+                        if ( Object.keys( conditionExpression.expressionAttributeNames).length > 0 ) {
+                            queryOptions.ExpressionAttributeNames = conditionExpression.expressionAttributeNames;
+                        }
+                        if ( Object.keys( conditionExpression.expressionAttributeValues).length > 0 ) {
+                            queryOptions.ExpressionAttributeValues = conditionExpression.expressionAttributeValues;
+                        }
                     }
 
                     if ( options.returnConsumedCapacity ) {
