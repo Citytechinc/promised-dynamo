@@ -723,7 +723,9 @@ var DynamoDb = function( o, tables ) {
                 } );
             },
 
-            updateItem: function( hash, itemRange, itemUpdates ) {
+            updateItem: function( hash, itemRange, itemUpdates, o ) {
+
+                var options = o || {};
 
                 var updates = typeof itemRange === 'object' ? itemRange : itemUpdates;
                 var range = typeof itemRange === 'string' ? itemRange : null;
@@ -751,6 +753,18 @@ var DynamoDb = function( o, tables ) {
 
                     queryOptions.UpdateExpression = updateExpression.updateExpression;
                     queryOptions.ExpressionAttributeValues = updateExpression.expressionAttributeValues;
+
+                    if ( options.returnConsumedCapacity ) {
+                        queryOptions.ReturnConsumedCapacity = options.returnConsumedCapacity;
+                    }
+
+                    if ( options.returnItemCollectionMetrics ) {
+                        queryOptions.ReturnItemCollectionMetrics = options.returnItemCollectionMetrics;
+                    }
+
+                    if ( options.returnValues ) {
+                        queryOptions.ReturnValues = options.returnValues;
+                    }
 
                     dynamodb.updateItem( queryOptions, function( err, data ) {
                         if ( err ) {
