@@ -292,8 +292,6 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition 
         }
     }
 
-    console.log( expressions.join( ' AND ' ) );
-
     return {
         conditionExpression: expressions.join( ' AND ' ),
         expressionAttributeNames: expressionAttributeNames,
@@ -376,13 +374,8 @@ var mapKeySchemaToIndexDefinition = function( keySchema, attributeDefinitions ) 
  * don't need to deal with the matter in your code.
  *
  * @param o
- * @param tables List of table definitions.  Table definitions take the following structure
- *   {
- *     name: "table-name",
- *     key: "primary-key-name",
- *     keyType: One of the Dynamo data type indicators
- *   }
- *   //TODO: Deal with tables with multiple indices
+ * @param tables List of table names
+ *
  * @constructor
  */
 var DynamoDb = function( o, tables ) {
@@ -725,10 +718,9 @@ var DynamoDb = function( o, tables ) {
 
             updateItem: function( hash, itemRange, itemUpdates, o ) {
 
-                var options = o || {};
-
                 var updates = typeof itemRange === 'object' ? itemRange : itemUpdates;
                 var range = typeof itemRange === 'string' ? itemRange : null;
+                var options = ( typeof itemRange === 'string' ? o : itemUpdates ) || {};
 
                 return tableDefinitionPromise.then( function( tableDefinition ) {
 
@@ -772,8 +764,8 @@ var DynamoDb = function( o, tables ) {
                             return;
                         }
 
-                        //TODO: Resolve to updated item
-                        deferred.resolve();
+                        //TODO: Resolve to updated item?
+                        deferred.resolve( data );
                     } );
 
                     return deferred.promise;
@@ -805,6 +797,4 @@ DynamoDb.valuesOptions = {
     "UPDATEDNEW": "UPDATED_NEW"
 };
 
-module.exports = function( o, tables ) {
-    return new DynamoDb( o, tables );
-};
+module.exports = DynamoDb;
