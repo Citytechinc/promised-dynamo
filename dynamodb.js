@@ -23,10 +23,12 @@ var mapDynamoObjectToJavascriptObject = function( item ) {
                 o[ key ] = currentProperty.BOOL;
             }
             else if ( currentProperty[ 'N' ] ) {
-                o[ key ] = currentProperty.N;
+                o[ key ] = Number( currentProperty.N );
             }
             else if ( currentProperty[ 'NS' ] ) {
-                o[ key ] = currentProperty.NS;
+                o[ key ] = currentProperty.NS.map( function( currentNumber ) {
+                    return Number( currentNumber );
+                } );
             }
 
             //TODO: Handle data types B, BS, L, M, and NULL
