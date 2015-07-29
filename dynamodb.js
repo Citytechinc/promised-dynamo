@@ -301,25 +301,70 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition 
     };
 
 };
-
+/*
+ * Simple SETs
+ * { a : 1, b : 2 }
+ *
+ * Removal
+ * { REMOVE : attrName }
+ *
+ * Addition
+ * { ADD : { a : 1 } } or { ADD : { a : [ 1, 2 ] } }
+ *
+ * Deletion
+ * { DELETE : { a : [ 1, 2 ] } }
+ */
 var mapUpdatesToUpdateExpression = function( updates ) {
 
-    //TODO: Handle operations other than SET in some way
-    var updateExpressions = [];
+    //TODO: Handle operations other than SET and ADD in some way
+    var updateExpressions = {};
     var expressionAttributeValues = {};
 
     var i = 1;
-    for ( var key in updates ) {
-        if ( updates.hasOwnProperty( key ) ) {
-            expressionAttributeValues[ ':' + i ] = updates[ key ];
-            updateExpressions.push( key + ' = :' + i );
+
+    var addToUpdateExpressions = function( type, expression, addition ) {
+        if ( !updateExpressions[ type ] ) {
+            updateExpressions[ type ] = [];
+        }
+
+        for ( var key in addition ) {
+            if ( addition.hasOwnProperty( key ) ) {
+                expressionAttributeValues[ ':' + i ] = addition[ key ];
+                updateExpressions[ type].push( key + ' ' + expression + ' :' + i );
+            }
 
             i++;
+        }
+    };
+
+    for ( var key in updates ) {
+        if ( updates.hasOwnProperty( key ) ) {
+            switch( key ) {
+                case 'ADD':
+                    addToUpdateExpressions( 'ADD', '', updates[ key ] );
+                    break;
+                case 'SET':
+                    addToUpdateExpressions( 'SET', '=', updates[ key ] );
+                    break;
+                default:
+                    var setExpressions = {};
+                    setExpressions[ key ] = updates[ key ];
+                    addToUpdateExpressions( 'SET', '=', setExpressions );
+                    break;
+            }
+        }
+    }
+
+    var updateExpression = '';
+
+    for ( var key in updateExpressions ) {
+        if ( updateExpressions.hasOwnProperty( key ) ) {
+            updateExpression += key + ' ' + updateExpressions[ key ].join( ', ' ) + ' ';
         }
     }
 
     return {
-        updateExpression: 'SET ' + updateExpressions.join( ', ' ),
+        updateExpression: updateExpression,
         expressionAttributeValues: mapJavascriptObjectToDynamoObject( expressionAttributeValues )
     };
 
@@ -718,6 +763,31 @@ var DynamoDb = function( o, tables ) {
                 } );
             },
 
+            /**
+             *
+             * <h2>Updates Description</h2>
+             * <p>The itemUpdates parameter takes an Updates Description object.  This is an objective representation of
+             * a DynamoDB Update Expression.  The keys of the object may either be column names or update types.  If a given
+             * key is a column name then the value should be the value you wish that column to be set to on the updated
+             * row.  If a given key is an update type then the value associated with that key will be based on the type
+             * as described below. </p>
+             * <dl>
+             *     <dt>SET</dt>
+             *     <dd>Indicates a SET update should be performed.  This is the default opperation applied to keys wich are
+             *     simple column names.  When described explicitly the SET key should be associated with an object whose keys
+             *     are the columns names to update and whose values are the values to set the named attribute to.</dd>
+             *     <dt>ADD</dt>
+             *     <dd>Indicates an ADD update should be performed.  The ADD key should be associated with an object whose
+             *     keys are the column names to update and whose values are the values to be added to the named attribute.
+             *     NOTE, ADD only supports numeric or set typed attributes.</dd>
+             * </dl>
+             *
+             * @param hash
+             * @param itemRange
+             * @param itemUpdates
+             * @param o
+             * @returns {*}
+             */
             updateItem: function( hash, itemRange, itemUpdates, o ) {
 
                 var updates = typeof itemRange === 'object' ? itemRange : itemUpdates;
@@ -744,6 +814,8 @@ var DynamoDb = function( o, tables ) {
                     queryOptions.TableName = tableDefinition.name;
 
                     var updateExpression = mapUpdatesToUpdateExpression( updates );
+                    console.log( updateExpression.updateExpression );
+                    console.log( updateExpression.expresionAttributeValues );
 
                     queryOptions.UpdateExpression = updateExpression.updateExpression;
                     queryOptions.ExpressionAttributeValues = updateExpression.expressionAttributeValues;
@@ -766,7 +838,9 @@ var DynamoDb = function( o, tables ) {
                             return;
                         }
 
-                        //TODO: Resolve to updated item?
+                        if ( options.returnValues && options.returnValues !== DynamoDb.valuesOptions.NONE ) {
+                            data.item = mapDynamoObjectToJavascriptObject( data.Attributes );
+                        }
                         deferred.resolve( data );
                     } );
 
