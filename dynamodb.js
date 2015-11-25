@@ -1,6 +1,13 @@
 var AWS = require( 'aws-sdk' );
 var Q = require( 'q' );
 
+/*
+ * TODO: Harmony Support
+ *
+ * 1) Auto configuration of tables in Harmony
+ * 2) Iterators over gets for continuations
+ */
+
 var mapDynamoObjectToJavascriptObject = function( item ) {
 
     if ( !item ) {
@@ -9,29 +16,39 @@ var mapDynamoObjectToJavascriptObject = function( item ) {
 
     var o = {};
 
+    var mapProperty = function( currentProperty ) {
+        if ( currentProperty[ 'S' ] ) {
+            return currentProperty.S;
+        }
+        else if ( currentProperty[ 'SS' ] ) {
+            return currentProperty.SS;
+        }
+        else if ( currentProperty[ 'BOOL' ] ) {
+            return currentProperty.BOOL;
+        }
+        else if ( currentProperty[ 'N' ] ) {
+            return Number( currentProperty.N );
+        }
+        else if ( currentProperty[ 'NS' ] ) {
+            return currentProperty.NS.map( function( currentNumber ) {
+                return Number( currentNumber );
+            } );
+        }
+        else if ( currentProperty[ 'L' ] ) {
+            return currentProperty.L.map( mapProperty );
+        }
+        else if ( currentProperty[ 'M' ] ) {
+            return mapDynamoObjectToJavascriptObject( currentProperty.M );
+        }
+    };
+
     for ( key in item ) {
         if ( item.hasOwnProperty( key ) ) {
             var currentProperty = item[ key ];
 
-            if ( currentProperty[ 'S' ] ) {
-                o[ key ] = currentProperty.S;
-            }
-            else if ( currentProperty[ 'SS' ] ) {
-                o[ key ] = currentProperty.SS;
-            }
-            else if ( currentProperty[ 'BOOL' ] ) {
-                o[ key ] = currentProperty.BOOL;
-            }
-            else if ( currentProperty[ 'N' ] ) {
-                o[ key ] = Number( currentProperty.N );
-            }
-            else if ( currentProperty[ 'NS' ] ) {
-                o[ key ] = currentProperty.NS.map( function( currentNumber ) {
-                    return Number( currentNumber );
-                } );
-            }
+            o[ key ] = mapProperty( currentProperty );
 
-            //TODO: Handle data types B, BS, L, M, and NULL
+            //TODO: Handle data types B, BS, and NULL
         }
     }
 
@@ -45,6 +62,7 @@ var mapDynamoObjectsToJavascriptObjects = function( items ) {
 
 var mapJavascriptObjectToDynamoObject = function( item ) {
 
+    //TODO: Handle B, BS, and NULL types
     if ( !item ) {
         return null;
     }
@@ -66,16 +84,31 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
             }
             else if ( Array.isArray( currentProperty ) ) {
                 if ( currentProperty.length ) {
+                    //TODO: The way this is coded there would be no way to handle lists of strings or lists of numbers
                     if ( typeof currentProperty[ 0 ] === 'string' ) {
                         o[ key ] = { "SS": currentProperty };
                     }
                     else if ( typeof currentProperty[ 0 ] === 'number' ) {
                         o[ key ] = { "NS": currentProperty.map( function( currentValue ) { return currentValue.toString() } ) };
                     }
+                    else {
+                        if ( typeof currentProperty[ 0 ] === 'object' ) {
+                            o[ key ] = { "L": currentProperty.map( function( currentListEntry ) {
+                                return {
+                                    "M": mapJavascriptObjectToDynamoObject( currentListEntry )
+                                }
+                            } ) };
+                        }
+                    }
+                    //TODO: Handle other list types
                 }
                 else {
+                    //TODO: Come up with a more appropriate way to handle empty lists
                     o[ key ] = { "SS": [] };
                 }
+            }
+            else if ( typeof currentProperty === 'object' ) {
+                o[ key ] = { "M": mapJavascriptObjectToDynamoObject( currentProperty ) };
             }
         }
     }
@@ -507,6 +540,7 @@ var DynamoDb = function( o, tables ) {
 
                     dynamodb.getItem( queryOptions, function( err, data ) {
 
+                        console.log( JSON.stringify( data ) );
                         if ( err ) {
                             deferred.reject( err );
                             return;
@@ -592,6 +626,7 @@ var DynamoDb = function( o, tables ) {
                                         return;
                                     }
 
+                                    //TODO: In cases where the actual result set is larger then the returned result set provide something which we can call to get more results
                                     deferred.resolve( mapDynamoObjectsToJavascriptObjects( data.Items ) );
 
                                 } );
@@ -646,6 +681,7 @@ var DynamoDb = function( o, tables ) {
                                         return;
                                     }
 
+                                    //TODO: Add consideration here for the case where the results contain both the results and a pointer to the next page of results - the pointer should be something callable or thenable which we can get more results from
                                     deferred.resolve( mapDynamoObjectsToJavascriptObjects( data.Items ) );
 
                                 } );
@@ -683,6 +719,8 @@ var DynamoDb = function( o, tables ) {
 
                 return tableDefinitionPromise.then( function( tableDefinition ) {
                     var deferred = Q.defer();
+
+                    console.log( JSON.stringify( mapJavascriptObjectToDynamoObject( item ) ) );
 
                     var queryOptions = {
                         Item: mapJavascriptObjectToDynamoObject( item ),
