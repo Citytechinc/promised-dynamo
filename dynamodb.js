@@ -540,7 +540,6 @@ var DynamoDb = function( o, tables ) {
 
                     dynamodb.getItem( queryOptions, function( err, data ) {
 
-                        console.log( JSON.stringify( data ) );
                         if ( err ) {
                             deferred.reject( err );
                             return;
@@ -720,8 +719,6 @@ var DynamoDb = function( o, tables ) {
                 return tableDefinitionPromise.then( function( tableDefinition ) {
                     var deferred = Q.defer();
 
-                    console.log( JSON.stringify( mapJavascriptObjectToDynamoObject( item ) ) );
-
                     var queryOptions = {
                         Item: mapJavascriptObjectToDynamoObject( item ),
                         TableName: tableDefinition.name
@@ -852,8 +849,6 @@ var DynamoDb = function( o, tables ) {
                     queryOptions.TableName = tableDefinition.name;
 
                     var updateExpression = mapUpdatesToUpdateExpression( updates );
-                    console.log( updateExpression.updateExpression );
-                    console.log( updateExpression.expresionAttributeValues );
 
                     queryOptions.UpdateExpression = updateExpression.updateExpression;
                     queryOptions.ExpressionAttributeValues = updateExpression.expressionAttributeValues;
