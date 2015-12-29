@@ -453,8 +453,17 @@ var mapKeySchemaToIndexDefinition = function( keySchema, attributeDefinitions ) 
  * Conversely, put and update operations take plain JavaScript objects and map them to Dynamo DB item structures so you
  * don't need to deal with the matter in your code.
  *
+ * The tables accessible via this dynamo driver are configured via the tables input.  An array of table definitions
+ * is provided in this input.  Each item may be a String (the name of the table) or a table configuration object.  In
+ * the later case the table configuration object is expected to have the following form:
+ *
+ * {
+ *   name: REQUIRED - the name of the DynamoDB table,
+ *   alias: OPTIONAL - how the table should be addressed in the resultant object
+ * }
+ *
  * @param o
- * @param tables List of table names
+ * @param tables List of table names or table configuration objects
  *
  * @constructor
  */
@@ -474,7 +483,10 @@ var DynamoDb = function( o, tables ) {
 
     var dynamodb = new AWS.DynamoDB();
 
-    tables.forEach( function( currentTable ) {
+    tables.forEach( function( currentTableConfiguration ) {
+
+        var currentTable = typeof currentTableConfiguration === 'object' ? currentTableConfiguration.name : currentTableConfiguration;
+        var currentTableAlias = typeof currentTableConfiguration === 'object' ? currentTableConfiguration.alias || currentTableConfiguration.name : currentTableConfiguration;
 
         var tableDefinitionDeferred = Q.defer();
         var tableDefinitionPromise = tableDefinitionDeferred.promise;
@@ -516,7 +528,7 @@ var DynamoDb = function( o, tables ) {
             }
         } );
 
-        self[ currentTable ] = {
+        self[ currentTableAlias ] = {
             getItem: function( hash, range ) {
 
                 return tableDefinitionPromise.then( function( tableDefinition ) {
