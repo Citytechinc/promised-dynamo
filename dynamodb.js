@@ -4,8 +4,12 @@ var Q = require( 'q' );
 /*
  * TODO: Harmony Support
  *
- * 1) Auto configuration of tables in Harmony
+ * 1) Auto configuration of tables in Harmony ( ?determine if this is desirable )
  * 2) Iterators over gets for continuations
+ */
+
+/*
+ * TODO: Continuation support for queries and scans
  */
 
 var mapDynamoObjectToJavascriptObject = function( item ) {
@@ -32,6 +36,14 @@ var mapDynamoObjectToJavascriptObject = function( item ) {
         else if ( currentProperty[ 'NS' ] ) {
             return currentProperty.NS.map( function( currentNumber ) {
                 return Number( currentNumber );
+            } );
+        }
+        else if ( currentProperty[ 'B' ] ) {
+            return new Buffer( currentProperty.B, 'base64' );
+        }
+        else if ( currentProperty[ 'BS' ] ) {
+            return currentProperty.BS.map( function( currentBinary ) {
+                return new Buffer( currentBinary, 'base64' );
             } );
         }
         else if ( currentProperty[ 'L' ] ) {
@@ -85,6 +97,7 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
             else if ( Array.isArray( currentProperty ) ) {
                 if ( currentProperty.length ) {
                     //TODO: The way this is coded there would be no way to handle lists of strings or lists of numbers
+                    //TODO: Deal with lists which are not homogeneous
                     if ( typeof currentProperty[ 0 ] === 'string' ) {
                         o[ key ] = { "SS": currentProperty };
                     }
@@ -93,11 +106,20 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
                     }
                     else {
                         if ( typeof currentProperty[ 0 ] === 'object' ) {
-                            o[ key ] = { "L": currentProperty.map( function( currentListEntry ) {
-                                return {
-                                    "M": mapJavascriptObjectToDynamoObject( currentListEntry )
-                                }
-                            } ) };
+                            if ( currentProperty[ 0 ] instanceof Buffer ) {
+                                o[ key ] = { "BS": currentProperty.map( function( currentValue ) {
+                                    return currentValue.toString( 'base64' );
+                                } ) };
+                            }
+                            else {
+                                o[key] = {
+                                    "L": currentProperty.map(function (currentListEntry) {
+                                        return {
+                                            "M": mapJavascriptObjectToDynamoObject(currentListEntry)
+                                        }
+                                    })
+                                };
+                            }
                         }
                     }
                     //TODO: Handle other list types
@@ -106,6 +128,10 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
                     //TODO: Come up with a more appropriate way to handle empty lists
                     o[ key ] = { "SS": [] };
                 }
+            }
+            else if ( currentProperty instanceof Buffer ) {
+                //TODO: Deal with trailing =
+                o[ key ] = { "B": currentProperty.toString( 'base64' ) };
             }
             else if ( typeof currentProperty === 'object' ) {
                 o[ key ] = { "M": mapJavascriptObjectToDynamoObject( currentProperty ) };

@@ -178,3 +178,52 @@ dynamodb.tablename.updateItem( '2a', null, { newProp: 6 } ).then( function() {
 ```
 
 Executes an updateItem request updating the identified item or creating a new item if one does not exist.
+
+### Data Types
+
+The following data types are currently supported
+
+#### Strings - S
+
+```
+{ propertyName: "string value" }
+```
+
+#### String Sets - SS
+
+```
+{ propertyName: [ "string value 1", "string value 2" ] }
+```
+
+#### Numbers - N
+
+```
+{ propertyName: 123 }
+```
+
+#### Number Sets - NS
+
+```
+{ propertyName: [ 123, 456 ] }
+```
+
+#### Boolean - B
+
+```
+{ propertyName: true }
+```
+
+#### Maps - M
+
+Nested objects are treated as Maps.  Maps may be nested to an arbitrary depth.  Lists may also be nested in Maps.
+
+```
+{ 
+  propertyName: {
+    subPropertyOne: "abc",
+    subPropertyTwo: "def"
+  }
+}
+```
+
+#### Lists - L
