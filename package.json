@@ -5,11 +5,21 @@
     "main": "dynamodb.js",
     "author": "Paul Michelotti",
     "license": "Apache-2.0",
-    "dependencies": {
-    "aws-sdk": "^2.1.36",
-    "q": "^1.4.1"
+    "keywords": [
+        "amazon",
+        "aws",
+        "db",
+        "dynamo"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Citytechinc/promised-dynamo"
     },
-    "publishConfig":{
-        "registry": "http://nexus.citytech.ctmsp.com/content/repositories/npm-private/"
+    "contributors": [
+        "Paul Michelotti <paul.michelotti@icfi.com>"
+    ],
+    "dependencies": {
+        "aws-sdk": "^2.1.36",
+        "q": "^1.4.1"
     }
 }

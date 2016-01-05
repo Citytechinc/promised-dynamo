@@ -1,12 +1,65 @@
 ## Promised Dynamo DB Wrapper
 
-A promise based fluent API around the Dynamo DB.  Operations are done using simple JSON objects which are translated by the service into DynamoDB's API.
+A promise based fluent API around the Dynamo DB.  Operations are performed using simple Javascript objects which are translated 
+by the service into DynamoDB's data structure.  Similarly, operation results are provided as Javascript objects translated from the 
+ DynamoDB data structure.  See Data Types below for an explanation of the translation. 
+ 
+This project is currently in alpha and as such does not expose all the functionality of the AWS SDK.  Known issues and 
+limitations below call out some of current omissions and works in progress.
 
 ### Instantiation
 
 ```
-var dynamodb = require( './services/dynamodb' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
+DynamoDB( options, tables )
 ```
+
+```
+var dynamodb = require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
+```
+
+#### Options
+
+Option Name | Type | Description 
+----------- | ---- | ----------- 
+accessKeyId | String | AWS Access Key ID
+secretAccessKey | String | AWS Secret Access Key associated with the provided Access Key ID
+region | String | AWS Region
+
+#### Table Configuration
+
+The second argument to the DynamoDB factory function is an Array defining the tables which will be exposed by the 
+returned object.  Table definitions may take two forms: strings and alias objects.
+
+##### Table Definition Strings
+
+If a string is provided as a table definition it is expected to be the name of a table in DynamoDB.  Operations on the 
+table will be accessible at a property with the same name as the table.  For example, 
+
+```
+var dynamodb = require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'mytable' ] );
+
+dynamodb.mytable.getItem( 'abc' )
+    .then( function( item ) {
+        console.log( item );
+    } );
+```
+
+##### Table Alias Definitions
+
+A table alias definition may be provided in place of a table name string in the Array of table definitions.  An alias 
+definition indicates both the name of the DynamoDB table and the property name via which the table will be accessible 
+on the resultant object.  For example,
+
+```
+var dynamodb = require( 'promised-dynamo' )( 
+    { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, 
+    [ { name: "dev-myTable", alias: "mytable" } ] );
+    
+dynamodb.mytable.getItem( 'abc' )
+    .then( function( item ) {
+        console.log( item );
+    } );
+```    
 
 ### Usage
 
@@ -27,6 +80,11 @@ dynamodb.tablename.getItem('john', 'tacos').then( function(result) {
 ```
 
 Executes a getItem request against the provided hash and range values.
+
+##### Returns
+
+A promise which, upon success, resolves to a Javascript object representing the found item.  If no item matched the 
+hash and range specified ???.
 
 #### query(hash[, range[, index]])
 
@@ -76,9 +134,108 @@ dynamodb.tablename.query( '12345' ).filter( { created: { ">": 1427517440482 } } 
 } );
 ```
 
-Filters the query results using the provided filter object.  See filtering below for a detailed description of the filter object.
+Filters the query results using the provided filter object.  See Filter Object below for a detailed description of the filter object.
 
-##### Filter Object
+##### Returns 
+
+A promise which, upon success, resolves to a Javascript Array of the Javascript objects representing the results 
+of the query.  If no records match the query parameters the promise resolves to an empty Array.
+
+##### Known Issues / Limitations
+
+* Currently if the size of the result set exceeds the maximum return record number there is no mechanism for requesting the next "page" of results.
+
+#### scan(filterDefinition)
+
+```
+dynamodb.tablename.scan( { someNumbers: { CONTAINS: 17 } } ).then( function( results ) {
+    results.forEach( console.log );
+} );
+```
+
+Executes a scan using the provided filter definition.  See Filter Objects above for an explanation of the form of a filter definition object.
+
+```
+dynamodb.tablename.scan( { someNumbers: { CONTAINS: 17 } } ).limit( 5 ).then( function( results ) {
+    results.forEach( console.log );
+} );
+```
+
+Limits the results of the scan to the limit number provided. 
+
+##### Returns 
+
+A promise which, upon success, resolves to a Javascript Array of the Javascript objects representing the results 
+of the scan.  If no records match the scan criteria the promise resolves to an empty Array.
+
+##### Known Issues / Limitations
+
+* Currently if the size of the result set exceeds the maximum return record number there is no mechanism for requesting the next "page" of results.
+
+#### putItem(item, options)
+
+```
+dynamodb.tablename.putItem( { id: '3a', email: 'john@johnson.com', someNumbers: [ 1, 3883, 2983 ] } ).then( function() {
+    console.log( 'success' );
+} );
+```
+
+Executes a putItem request which will either add the new item or replace the existing item if an item already exists with the same key(s).
+Upon success the promise will resolve to the data object returned from the AWS SDK.
+
+##### Options
+
+Option Name | Type | Description 
+----------- | ---- | ----------- 
+conditionExpression | Object | Allows for the definition of an expression to be evaluated in determining whether to execute the put request.  See Filter Object below for a definition of the form of a condition expression.
+returnConsumedCapacity | String | Indicates which aspects of capacity should be reported as part of the results.  See Consumed Capacity constants below for valid options.   
+returnItemCollectionMetrics | String | Indicates which metrics should be provided as part of the results.  See Item Collection Metrics constants below for valid options. 
+returnValues | String | Defines whether values should be provided as part of the put result.  The only supported options for putItem are `NONE` and `ALL_OLD`.  When set to an option other than `NONE` the resolved data object will include an `item` property containing the returned attributes mapped to a Javascript object.
+
+##### Returns
+
+A promise which, upon success, resolves to the `data` object returned from the AWS SDK during a put.  See Options above for 
+considerations concerning the information in this result.
+
+#### deleteItem(hash, range)
+
+```
+dynamodb.tablename.deleteItem( '2a', '123' ).then( function() {
+    console.log( 'success' );
+} );
+```
+
+Executes a deleteItem request removing the identified item if it exists.  
+
+##### Returns
+
+A promise which resolves upon successful deletion of the identified item.
+
+#### updateItem(hash, range, itemUpdates, options)
+
+```
+dynamodb.tablename.updateItem( '2a', null, { newProp: 6 } ).then( function() {
+    console.log( 'success' );
+} );
+```
+
+Executes an updateItem request updating the identified item or creating a new item if one does not exist.  
+
+##### Options
+
+Option Name | Type | Description 
+----------- | ---- | ----------- 
+conditionExpression | Object | Allows for the definition of an expression to be evaluated in determining whether to execute the update request.  See Filter Object below for a definition of the form of a condition expression.
+returnConsumedCapacity | String | Indicates which aspects of capacity should be reported as part of the results.  See Consumed Capacity constants below for valid options.   
+returnItemCollectionMetrics | String | Indicates which metrics should be provided as part of the results.  See Item Collection Metrics constants below for valid options. 
+returnValues | String | Defines whether values should be provided as part of the put result.  See Return Values constants below for valid options.  When set to an option other than `NONE` the resolved data object will include an `item` property containing the returned attributes mapped to a Javascript object.
+
+##### Returns
+
+A promise which, upon success, resolves to the `data` object returned from the AWS SDK during an update.  See Options above for 
+considerations concerning the information in this result.
+
+### Filter Object
 
 ```
 {
@@ -103,7 +260,7 @@ Filters the query results using the provided filter object.  See filtering below
 
 A query's index based results may be filtered based on a filter object.  A filter object is made up of a series of expression definitions which are ANDed together.  A single expression definition is either a simple expression definition or a composite expression definition.
 
-###### Simple Expression Definitions
+#### Simple Expression Definitions
 
 A simple expression applies an operator to a named property and a value.  Such an expression may  take one of two forms.
 
@@ -127,7 +284,7 @@ The later of these forms implicitly uses the "=" operator.  The following are va
 * BETWEEN - Expects an array containing exactly two values where the first value is the bottom of the range and the later value is the top of the range
 * CONTAINS - Expects a single value
 
-###### Composite Expression Definitions
+#### Composite Expression Definitions
 
 Composite expressions represent multiple expressions which are ANDed or ORed together.  These expressions take the following form.
 
@@ -141,43 +298,6 @@ AND|OR: [
 
 The AND or OR expression is paired with an Array of expressions.  Each of these contained expressions may be either a simple expression or a composite expression.
 
-#### scan(filterDefinition)
-
-```
-dynamodb.tablename.scan( { someNumbers: { CONTAINS: 17 } } ).then( function( results ) {
-    results.forEach( console.log );
-} );
-```
-
-Executes a scan using the provided filter definition.  See Filter Objects above for an explanation of the form of a filter definition object.
-
-```
-dynamodb.tablename.scan( { someNumbers: { CONTAINS: 17 } } ).limit( 5 ).then( function( results ) {
-    results.forEach( console.log );
-} );
-```
-
-Limits the results of the scan to the limit number provided. 
-
-#### putItem(item)
-
-```
-dynamodb.tablename.putItem( { id: '3a', email: 'john@johnson.com', someNumbers: [ 1, 3883, 2983 ] } ).then( function() {
-    console.log( 'success' );
-} );
-```
-
-Executes a putItem request which will either add the new item or replace the existing item if an item already exists with the same key(s).
-
-#### updateItem(hash, range, itemUpdates)
-
-```
-dynamodb.tablename.updateItem( '2a', null, { newProp: 6 } ).then( function() {
-    console.log( 'success' );
-} );
-```
-
-Executes an updateItem request updating the identified item or creating a new item if one does not exist.
 
 ### Data Types
 
@@ -227,3 +347,51 @@ Nested objects are treated as Maps.  Maps may be nested to an arbitrary depth.  
 ```
 
 #### Lists - L
+
+Lists are only partially supported and the API around this is likely to change in the future.  Lists coming from Dynamo 
+will be converted into an Array of the contained values.  Lists being fed to Dynamo have the following limitations 
+currently: 
+
+* Only lists of objects are supported
+* Empty lists are not supported
+
+
+```
+{
+  propertyName: [
+    {
+      key: value
+    },
+    {
+      key: value
+    }
+  ]
+}
+```
+
+### Constants
+
+#### Consumed Capacity Options
+
+Enumeration of valid option values for the `returnConsumedCapacity` option.
+
+* `dynamoDb.consumedCapacityOptions.INEXES`
+* `dynamoDb.consumedCapacityOptions.TOTAL`
+* `dynamoDb.consumedCapacityOptions.NONE`
+
+#### Item Collection Metrics Options
+
+Enumeration of valid option values for the `returnItemCollectionMetrics` option.
+
+* `dynamoDb.itemCollectionMetricsOptions.SIZE`
+* `dynamoDb.itemCollectionMetricsOptions.NONE`
+
+#### Return Values Options
+
+Enumeration of valid option values for the `returnValues` option.
+
+* `dynamoDb.valuesOptions.NONE`
+* `dynamoDb.valuesOptions.ALLOLD`
+* `dynamoDb.valuesOptions.UPDATEDOLD`
+* `dynamoDb.valuesOptions.ALLNEW`
+* `dynamoDb.valuesOptions.UPDATEDNEW`

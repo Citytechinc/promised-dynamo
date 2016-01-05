@@ -583,6 +583,7 @@ var DynamoDb = function( o, tables ) {
                             return;
                         }
 
+                        //TODO: Determine whether this variability is still needed and what its purpose was
                         if ( options.mapResults !== false ) {
                             deferred.resolve( mapDynamoObjectToJavascriptObject( data.Item ) );
                         } else {
@@ -793,7 +794,10 @@ var DynamoDb = function( o, tables ) {
                             return;
                         }
 
-                        deferred.resolve( item );
+                        if ( options.returnValues && options.returnValues !== DynamoDb.valuesOptions.NONE ) {
+                            data.item = mapDynamoObjectToJavascriptObject( data.Attributes );
+                        }
+                        deferred.resolve( data );
                     } );
 
                     return deferred.promise;
@@ -828,7 +832,7 @@ var DynamoDb = function( o, tables ) {
                             return;
                         }
 
-                        deferred.resolve();
+                        deferred.resolve( data );
                     } );
 
                     return deferred.promise;
