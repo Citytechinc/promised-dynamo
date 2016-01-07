@@ -3,7 +3,7 @@
     "version": "0.3.0",
     "description": "A promise based wrapper around the DynamoDB AWS SDK",
     "main": "dynamodb.js",
-    "author": "Paul Michelotti",
+    "author": "CID10",
     "license": "Apache-2.0",
     "keywords": [
         "amazon",
