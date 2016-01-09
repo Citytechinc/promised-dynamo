@@ -497,17 +497,22 @@ var DynamoDb = function( o, tables ) {
     var options = o || {};
     var self = this;
 
-    if ( !o.accessKeyId || !o.secretAccessKey || !o.region ) {
-        throw new Error( 'AWS Access Key ID, Secret Access Key, and Region must all be provided as database connection options' );
+    if ( ( !o.accessKeyId || !o.secretAccessKey || !o.region ) && !o.db ) {
+        throw new Error( 'AWS Access Key ID, Secret Access Key, and Region must all be provided or an existing DB must be provided' );
     }
 
-    AWS.config.update( {
-        accessKeyId: options.accessKeyId,
-        secretAccessKey: options.secretAccessKey,
-        region: options.region
-    } );
+    if ( options.accessKeyId && options.secretAccessKey && options.region ) {
+        AWS.config.update({
+            accessKeyId: options.accessKeyId,
+            secretAccessKey: options.secretAccessKey,
+            region: options.region
+        });
+    }
 
-    var dynamodb = new AWS.DynamoDB();
+    var dynamodb = options.db || new AWS.DynamoDB();
+
+    this.mapDynamoObjectToJavascriptObject = mapDynamoObjectToJavascriptObject;
+    this.mapJavascriptObjectToDynamoObject = mapJavascriptObjectToDynamoObject;
 
     tables.forEach( function( currentTableConfiguration ) {
 
