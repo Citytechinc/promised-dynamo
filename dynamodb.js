@@ -60,7 +60,7 @@ var mapDynamoObjectToJavascriptObject = function( item ) {
 
             o[ key ] = mapProperty( currentProperty );
 
-            //TODO: Handle data types B, BS, and NULL
+            //TODO: Handle NULL
         }
     }
 
@@ -74,7 +74,7 @@ var mapDynamoObjectsToJavascriptObjects = function( items ) {
 
 var mapJavascriptObjectToDynamoObject = function( item ) {
 
-    //TODO: Handle B, BS, and NULL types
+    //TODO: Handle NULL types
     if ( !item ) {
         return null;
     }
@@ -125,8 +125,8 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
                     //TODO: Handle other list types
                 }
                 else {
-                    //TODO: Come up with a more appropriate way to handle empty lists
-                    o[ key ] = { "SS": [] };
+                    //TODO: Evaluate appropriateness of this handling - List is being used, because empty sets are not allowed
+                    o[ key ] = { "L": [] };
                 }
             }
             else if ( currentProperty instanceof Buffer ) {
