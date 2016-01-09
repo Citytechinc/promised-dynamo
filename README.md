@@ -17,6 +17,13 @@ DynamoDB( options, tables )
 var dynamodb = require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
 ```
 
+Or
+
+```
+var AWS = require( 'aws-sdk' );
+var dynamodb = require( 'promised-dynamo' )( { db: new AWS.DynamoDB() }, [ 'tablename', 'anothertablename' ] );
+```
+
 #### Options
 
 Option Name | Type | Description 
@@ -368,6 +375,16 @@ currently:
   ]
 }
 ```
+
+### Utilities
+
+#### DynamoDB.mapDynamoObjectToJavascriptObject( object )
+
+Takes a Dynamo DB Attributes object and maps it to a Javascript object. 
+
+#### DynamoDB.mapJavascriptObjectToDynamoObject( object ) 
+
+Takes a Javascript object and transforms it into a Dynamo DB Attributes object.
 
 ### Constants
 
