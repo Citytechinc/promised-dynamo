@@ -511,9 +511,6 @@ var DynamoDb = function( o, tables ) {
 
     var dynamodb = options.db || new AWS.DynamoDB();
 
-    this.mapDynamoObjectToJavascriptObject = mapDynamoObjectToJavascriptObject;
-    this.mapJavascriptObjectToDynamoObject = mapJavascriptObjectToDynamoObject;
-
     tables.forEach( function( currentTableConfiguration ) {
 
         var currentTable = typeof currentTableConfiguration === 'object' ? currentTableConfiguration.name : currentTableConfiguration;
@@ -952,5 +949,9 @@ DynamoDb.valuesOptions = {
     "ALLNEW": "ALL_NEW",
     "UPDATEDNEW": "UPDATED_NEW"
 };
+
+
+DynamoDb.mapDynamoObjectToJavascriptObject = mapDynamoObjectToJavascriptObject;
+DynamoDb.mapJavascriptObjectToDynamoObject = mapJavascriptObjectToDynamoObject;
 
 module.exports = DynamoDb;
