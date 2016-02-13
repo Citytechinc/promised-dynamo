@@ -333,9 +333,19 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition 
         }
 
         if ( !namesForExpressionAttributes[ conditionKey ] ) {
+            namesForExpressionAttributes[ conditionKey ] = conditionKey.split( '.').map( function( currentNamePart ) {
+                var newNamePart = '#N' + expressionAttributeNamesCount;
+                expressionAttributeNames[ newNamePart ] = currentNamePart;
+                expressionAttributeNamesCount += 1;
+
+                return newNamePart;
+            } ).join( '.' );
+
+            /*
             namesForExpressionAttributes[ conditionKey ] = '#' + expressionAttributeNamesCount;
             expressionAttributeNames[ '#' + expressionAttributeNamesCount ] = conditionKey;
             expressionAttributeNamesCount += 1;
+            */
         }
 
         if ( typeof expressionDefinition === 'object' ) {
