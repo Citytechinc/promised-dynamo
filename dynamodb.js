@@ -378,8 +378,19 @@ var mapUpdatesToUpdateExpression = function( updates ) {
     //TODO: Handle operations other than SET and ADD in some way
     var updateExpressions = {};
     var expressionAttributeValues = {};
+    var expressionAttributeNames = {};
 
     var i = 1;
+    var n = 1;
+
+    var mapNameToExpressionAttributeName = function( name ) {
+        return name.split( '.' ).map( function( currentNamePart ) {
+            var newNamePart = '#N' + n;
+            expressionAttributeNames[ newNamePart ] = currentNamePart;
+            n++;
+            return newNamePart;
+        } ).join( '.' );
+    };
 
     var addToUpdateExpressions = function( type, expression, addition ) {
         if ( !updateExpressions[ type ] ) {
@@ -389,7 +400,7 @@ var mapUpdatesToUpdateExpression = function( updates ) {
         for ( var key in addition ) {
             if ( addition.hasOwnProperty( key ) ) {
                 expressionAttributeValues[ ':' + i ] = addition[ key ];
-                updateExpressions[ type].push( key + ' ' + expression + ' :' + i );
+                updateExpressions[ type].push( mapNameToExpressionAttributeName( key ) + ' ' + expression + ' :' + i );
             }
 
             i++;
@@ -424,7 +435,8 @@ var mapUpdatesToUpdateExpression = function( updates ) {
 
     return {
         updateExpression: updateExpression,
-        expressionAttributeValues: mapJavascriptObjectToDynamoObject( expressionAttributeValues )
+        expressionAttributeValues: mapJavascriptObjectToDynamoObject( expressionAttributeValues ),
+        expressionAttributeNames: expressionAttributeNames
     };
 
 };
@@ -896,6 +908,7 @@ var DynamoDb = function( o, tables ) {
 
                     queryOptions.UpdateExpression = updateExpression.updateExpression;
                     queryOptions.ExpressionAttributeValues = updateExpression.expressionAttributeValues;
+                    queryOptions.ExpressionAttributeNames = updateExpression.expressionAttributeNames;
 
                     if ( options.returnConsumedCapacity ) {
                         queryOptions.ReturnConsumedCapacity = options.returnConsumedCapacity;
