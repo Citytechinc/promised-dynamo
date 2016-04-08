@@ -1,6 +1,6 @@
 {
   "name": "promised-dynamo",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A promise based wrapper around the DynamoDB AWS SDK",
   "main": "dynamodb.js",
   "author": "CID10",
