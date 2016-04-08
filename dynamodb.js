@@ -342,10 +342,10 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition 
             } ).join( '.' );
 
             /*
-            namesForExpressionAttributes[ conditionKey ] = '#' + expressionAttributeNamesCount;
-            expressionAttributeNames[ '#' + expressionAttributeNamesCount ] = conditionKey;
-            expressionAttributeNamesCount += 1;
-            */
+             namesForExpressionAttributes[ conditionKey ] = '#' + expressionAttributeNamesCount;
+             expressionAttributeNames[ '#' + expressionAttributeNamesCount ] = conditionKey;
+             expressionAttributeNamesCount += 1;
+             */
         }
 
         if ( typeof expressionDefinition === 'object' ) {
@@ -407,6 +407,11 @@ var mapUpdatesToUpdateExpression = function( updates ) {
             updateExpressions[ type ] = [];
         }
 
+        if ( type === 'REMOVE' ) {
+            updateExpressions[ type].push( mapNameToExpressionAttributeName( addition ) );
+            return;
+        }
+
         for ( var key in addition ) {
             if ( addition.hasOwnProperty( key ) ) {
                 expressionAttributeValues[ ':' + i ] = addition[ key ];
@@ -422,6 +427,9 @@ var mapUpdatesToUpdateExpression = function( updates ) {
             switch( key ) {
                 case 'ADD':
                     addToUpdateExpressions( 'ADD', '', updates[ key ] );
+                    break;
+                case 'REMOVE':
+                    addToUpdateExpressions( 'REMOVE', '', updates[ key ] );
                     break;
                 case 'SET':
                     addToUpdateExpressions( 'SET', '=', updates[ key ] );
@@ -917,8 +925,15 @@ var DynamoDb = function( o, tables ) {
                     var updateExpression = mapUpdatesToUpdateExpression( updates );
 
                     queryOptions.UpdateExpression = updateExpression.updateExpression;
-                    queryOptions.ExpressionAttributeValues = updateExpression.expressionAttributeValues;
-                    queryOptions.ExpressionAttributeNames = updateExpression.expressionAttributeNames;
+
+                    if ( Object.keys( updateExpression.expressionAttributeValues).length ) {
+                        queryOptions.ExpressionAttributeValues = updateExpression.expressionAttributeValues;
+                    }
+                    if ( Object.keys( updateExpression.expressionAttributeNames).length ) {
+                        queryOptions.ExpressionAttributeNames = updateExpression.expressionAttributeNames;
+                    }
+
+                    console.log( JSON.stringify( updateExpression ) );
 
                     if ( options.returnConsumedCapacity ) {
                         queryOptions.ReturnConsumedCapacity = options.returnConsumedCapacity;
