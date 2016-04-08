@@ -14,14 +14,14 @@ DynamoDB( options, tables )
 ```
 
 ```
-var dynamodb = require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
+var dynamodb = new require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
 ```
 
 Or
 
 ```
 var AWS = require( 'aws-sdk' );
-var dynamodb = require( 'promised-dynamo' )( { db: new AWS.DynamoDB() }, [ 'tablename', 'anothertablename' ] );
+var dynamodb = new require( 'promised-dynamo' )( { db: new AWS.DynamoDB() }, [ 'tablename', 'anothertablename' ] );
 ```
 
 #### Options
@@ -182,9 +182,12 @@ of the scan.  If no records match the scan criteria the promise resolves to an e
 #### putItem(item, options)
 
 ```
-dynamodb.tablename.putItem( { id: '3a', email: 'john@johnson.com', someNumbers: [ 1, 3883, 2983 ] } ).then( function() {
-    console.log( 'success' );
-} );
+dynamodb.tablename.putItem( 
+    { id: '3a', email: 'john@johnson.com', someNumbers: [ 1, 3883, 2983 ] }, 
+    { returnValues: "ALL_OLD" } )
+    .then( function( result ) {
+        console.log( JSON.stringify( result.item );
+    } );
 ```
 
 Executes a putItem request which will either add the new item or replace the existing item if an item already exists with the same key(s).

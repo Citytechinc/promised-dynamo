@@ -953,5 +953,6 @@ DynamoDb.valuesOptions = {
 
 DynamoDb.mapDynamoObjectToJavascriptObject = mapDynamoObjectToJavascriptObject;
 DynamoDb.mapJavascriptObjectToDynamoObject = mapJavascriptObjectToDynamoObject;
+DynamoDb.mapConditionDefinitionToConditionExpression = mapConditionDefinitionToConditionExpression;
 
 module.exports = DynamoDb;
