@@ -933,8 +933,6 @@ var DynamoDb = function( o, tables ) {
                         queryOptions.ExpressionAttributeNames = updateExpression.expressionAttributeNames;
                     }
 
-                    console.log( JSON.stringify( updateExpression ) );
-
                     if ( options.returnConsumedCapacity ) {
                         queryOptions.ReturnConsumedCapacity = options.returnConsumedCapacity;
                     }
