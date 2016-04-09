@@ -408,7 +408,14 @@ var mapUpdatesToUpdateExpression = function( updates ) {
         }
 
         if ( type === 'REMOVE' ) {
-            updateExpressions[ type].push( mapNameToExpressionAttributeName( addition ) );
+            if ( Array.isArray( addition ) ) {
+                addition.forEach( function( currentRemoval ) {
+                    updateExpressions[ type].push( mapNameToExpressionAttributeName( currentRemoval ) );
+                } );
+            }
+            else {
+                updateExpressions[type].push(mapNameToExpressionAttributeName(addition));
+            }
             return;
         }
 

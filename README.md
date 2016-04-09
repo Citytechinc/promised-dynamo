@@ -221,7 +221,7 @@ Executes a deleteItem request removing the identified item if it exists.
 
 A promise which resolves upon successful deletion of the identified item.
 
-#### updateItem(hash, range, itemUpdates, options)
+#### updateItem(hash, range, updateExpression, options)
 
 ```
 dynamodb.tablename.updateItem( '2a', null, { newProp: 6 } ).then( function() {
@@ -229,7 +229,8 @@ dynamodb.tablename.updateItem( '2a', null, { newProp: 6 } ).then( function() {
 } );
 ```
 
-Executes an updateItem request updating the identified item or creating a new item if one does not exist.  
+Executes an updateItem request updating the identified item or creating a new item if one does not exist.  See Update Expression 
+below for details concerning the form of the `updateExpression` parameter. 
 
 ##### Options
 
@@ -244,6 +245,96 @@ returnValues | String | Defines whether values should be provided as part of the
 
 A promise which, upon success, resolves to the `data` object returned from the AWS SDK during an update.  See Options above for 
 considerations concerning the information in this result.
+
+### Update Expression
+
+```
+{
+    SET: {
+        type: "Tacos"
+    },
+    ADD: {
+        coolness: 5
+    },
+    REMOVE: [ "rating", "tightness" ]
+}
+```
+
+The `updateItem` function takes as one of its parameters an Update Expression object.  Such an object defines the 
+updates to be made and allows for the functionality exposed by the [AWS Update Expression](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Modifying.html). 
+The keys of the Update Expression object represent the operation being undertaken.  Any number of expression types may 
+be set in tandem and any number of expressions may be declared under an expression type.
+
+#### SET Expressions
+
+SET expressions indicate that a particular property should be set to a particular value.  The value may be any of the 
+types listed in Data Types below.  It is not actually necessary to indicate the SET expression and keys of the Update Expression 
+object which are not an operator identifier (`SET`, `ADD`, or `REMOVE`) will be treated as though they are declared 
+under the `SET` operator.  This simplifies the common case of setting properties on an object.
+
+```
+{ 
+    SET: {
+        type: "Tacos"
+    }
+}
+```
+
+Is equivalent to
+
+```
+{
+    type: "Tacos"
+}
+```
+
+When setting nested properties use a string key to identify the fully qualified nested property name.
+
+```
+{ 
+    SET: {
+        "a.b": "c"
+    }
+}
+```
+
+#### ADD Expressions
+
+ADD operations are supported for Number and Set data types.  As such it can be used to add a value to a Number or to add 
+an item to a Set. 
+
+```
+{
+    ADD: {
+        someNumber: 7.3,
+        someStringSet: "D"
+    }
+}
+```
+
+Note: The official [Update Expression documentation](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.Modifying.html#Expressions.Modifying.UpdateExpressions.ADD) 
+discourages the use of the `ADD` operator.
+
+#### REMOVE Expressions
+
+REMOVE expressions are used to denote that a property should be completely removed from a record.  Multiple properties 
+may be specified for removal by providing an Array to the REMOVE operation.
+
+```
+{
+    REMOVE: "property1"
+}
+```
+
+```
+{
+    REMOVE: [ "property1", "property2", "property3" ]
+}
+```
+
+#### DELETE Expressions
+
+Not yet supported
 
 ### Filter Object
 
