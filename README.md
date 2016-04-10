@@ -91,7 +91,7 @@ Executes a getItem request against the provided hash and range values.
 ##### Returns
 
 A promise which, upon success, resolves to a Javascript object representing the found item.  If no item matched the 
-hash and range specified the promise resolves to `null`.
+hash and range specified the promise will resolve to `null`.
 
 #### query(hash[, range[, index]])
 
