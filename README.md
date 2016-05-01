@@ -133,7 +133,7 @@ dynamodb.tablename.query( '12345' ).limit( 3 ).then( function( results ) {
 } );
 ```
 
-Limits the results of a query to the number provided.
+Limits the evaluated rows to the number provided.  WARNING, Limit does not limit results, it mirrors DynamoDB's Limit option and as such limits the number of records evaluated during the query.
 
 ```
 dynamodb.tablename.query( '12345' ).filter( { created: { ">": 1427517440482 } } ).then( function( results ) {
@@ -142,6 +142,14 @@ dynamodb.tablename.query( '12345' ).filter( { created: { ">": 1427517440482 } } 
 ```
 
 Filters the query results using the provided filter object.  See Filter Object below for a detailed description of the filter object.
+
+```
+dynamodb.tablename.query( '12345' ).reverse().then( function( results ) {
+    results.forEach( console.log );
+} );
+```
+
+Reverses the order in which the items in the results are sorted based on the Sort Key.  
 
 ##### Returns 
 

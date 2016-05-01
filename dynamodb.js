@@ -675,6 +675,11 @@ var DynamoDb = function( o, tables ) {
 
                         return queryable;
                     },
+                    reverse: function() {
+                        queryOptions.ScanIndexForward = false;
+
+                        return queryable;
+                    },
                     then: function( f ) {
                         if ( !executed ) {
 
