@@ -180,14 +180,14 @@ var mapJavascriptObjectToDynamoObject = function( item ) {
  * @param conditionDefinition
  * @returns {{conditionExpression, expressionAttributeNames: {}, expressionAttributeValues}}
  */
-var mapConditionDefinitionToConditionExpression = function( conditionDefinition ) {
+var mapConditionDefinitionToConditionExpression = function( conditionDefinition, valueCountStart, nameCountStart ) {
 
     var expressionAttributeNames = {},
         namesForExpressionAttributes = {},
         expressionAttributeValues = {},
         valuesForExpressionAttributes = {},
-        expressionAttributeValuesCount = 1,
-        expressionAttributeNamesCount = 1;
+        expressionAttributeValuesCount = valueCountStart || 1,
+        expressionAttributeNamesCount = nameCountStart || 1;
 
     var writeOperatorExpression = function( conditionKey, operator, values ) {
 
@@ -383,7 +383,7 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition 
  * Deletion
  * { DELETE : { a : [ 1, 2 ] } }
  */
-var mapUpdatesToUpdateExpression = function( updates ) {
+var mapUpdatesToUpdateExpression = function( updates, updateCondition ) {
 
     //TODO: Handle operations other than SET and ADD in some way
     var updateExpressions = {};
@@ -458,11 +458,31 @@ var mapUpdatesToUpdateExpression = function( updates ) {
         }
     }
 
-    return {
+    var updateExpressionDefinition = {
         updateExpression: updateExpression,
         expressionAttributeValues: mapJavascriptObjectToDynamoObject( expressionAttributeValues ),
         expressionAttributeNames: expressionAttributeNames
     };
+
+    if ( updateCondition ) {
+        var conditionExpression = mapConditionDefinitionToConditionExpression( updateCondition, i + 1, n + 1 );
+
+        updateExpressionDefinition.conditionExpression = conditionExpression.conditionExpression;
+
+        for ( var expressionAttributeNameKey in conditionExpression.expressionAttributeNames ) {
+            if ( conditionExpression.expressionAttributeNames.hasOwnProperty( expressionAttributeNameKey ) ) {
+                updateExpressionDefinition.expressionAttributeNames[ expressionAttributeNameKey ] = conditionExpression.expressionAttributeNames[ expressionAttributeNameKey ];
+            }
+        }
+
+        for ( var expressionAttributeValueKey in conditionExpression.expressionAttributeValues ) {
+            if ( conditionExpression.expressionAttributeValues.hasOwnProperty( expressionAttributeValueKey ) ) {
+                updateExpressionDefinition.expressionAttributeValues[ expressionAttributeValueKey ] = conditionExpression.expressionAttributeValues[ expressionAttributeValueKey ];
+            }
+        }
+    }
+
+    return updateExpressionDefinition;
 
 };
 
@@ -934,7 +954,7 @@ var DynamoDb = function( o, tables ) {
 
                     queryOptions.TableName = tableDefinition.name;
 
-                    var updateExpression = mapUpdatesToUpdateExpression( updates );
+                    var updateExpression = mapUpdatesToUpdateExpression( updates, options.conditionExpression );
 
                     queryOptions.UpdateExpression = updateExpression.updateExpression;
 
@@ -943,6 +963,9 @@ var DynamoDb = function( o, tables ) {
                     }
                     if ( Object.keys( updateExpression.expressionAttributeNames).length ) {
                         queryOptions.ExpressionAttributeNames = updateExpression.expressionAttributeNames;
+                    }
+                    if ( updateExpression.conditionExpression ) {
+                        queryOptions.ConditionExpression = updateExpression.conditionExpression;
                     }
 
                     if ( options.returnConsumedCapacity ) {
