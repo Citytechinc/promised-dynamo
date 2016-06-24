@@ -568,6 +568,70 @@ var DynamoDb = function( o, tables ) {
 
     var dynamodb = options.db || new AWS.DynamoDB();
 
+    /**
+     * <ul>
+     *     <li>name</li>
+     *     <li>hash
+     *       <ul>
+     *           <li>name</li>
+     *           <li>type: S|B|N</li>
+     *       </ul>
+     *     </li>
+     *     <li>range
+     *       <ul>
+     *           <li>name</li>
+     *           <li>type: S|B|N</li>
+     *       </ul>
+     *     </li>
+     *     <li>readCapacityUnits: 5</li>
+     *     <li>writeCapacityUnits: 5</li>
+     * </ul>
+     *
+     * @param newTableConfiguration
+     * @param resolveOnActive
+     * @returns {*|promise}
+     */
+    this.createTable = function( newTableConfiguration, resolveOnActive ) {
+        var deferred = Q.defer();
+
+        var awsTableConfiguration = {
+            AttributeDefinitions: [ {
+                AttributeName: newTableConfiguration.hash.name,
+                AttributeType: newTableConfiguration.hash.type
+            } ],
+            KeySchema: [ {
+                AttributeName: newTableConfiguration.hash.name,
+                KeyType: "HASH"
+            } ],
+            ProvisionedThroughput: {
+                ReadCapacityUnits: newTableConfiguration.readCapacityUnits || 5,
+                WriteCapacityUnits: newTableConfiguration.writeCapacityUnits || 5
+            },
+            TableName: newTableConfiguration.name
+        };
+
+        if ( newTableConfiguration.range ) {
+            awsTableConfiguration.AttributeDefinitions.push( {
+                AttributeName: newTableConfiguration.range.name,
+                AttributeType: newTableConfiguration.range.type
+            } );
+            awsTableConfiguration.KeySchema.push( {
+                AttributeName: newTableConfiguration.range.name,
+                KeyType: "RANGE"
+            } );
+        }
+
+        dynamodb.createTable( awsTableConfiguration, function( err, data ) {
+            if ( err ) {
+                return deferred.reject( err );
+            }
+
+            deferred.resolve( data );
+        } );
+
+        return deferred.promise;
+    };
+
     tables.forEach( function( currentTableConfiguration ) {
 
         var currentTable = typeof currentTableConfiguration === 'object' ? currentTableConfiguration.name : currentTableConfiguration;
@@ -583,6 +647,8 @@ var DynamoDb = function( o, tables ) {
                 tableDefinitionDeferred.reject( err );
             }
             else {
+                console.log( JSON.stringify( data ) );
+                console.log( data.Table.TableArn );
                 var attributeDefinitions = {};
                 var secondaryIndices = {};
                 var primaryIndex = {};

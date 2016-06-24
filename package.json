@@ -19,7 +19,7 @@
     "Paul Michelotti <paul.michelotti@icfi.com>"
   ],
   "dependencies": {
-    "aws-sdk": "^2.1.36",
+    "aws-sdk": "^2.4.0",
     "q": "^1.4.1"
   }
 }
