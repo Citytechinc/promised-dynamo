@@ -264,7 +264,10 @@ considerations concerning the information in this result.
     ADD: {
         coolness: 5
     },
-    REMOVE: [ "rating", "tightness" ]
+    REMOVE: [ "rating", "tightness" ],
+    DELETE: {
+        favorites: [ "burgers" ]
+    }
 }
 ```
 
@@ -342,7 +345,14 @@ may be specified for removal by providing an Array to the REMOVE operation.
 
 #### DELETE Expressions
 
-Not yet supported
+DELETE expressions are used to delete items from String Sets or Number Sets.  The value deleted must be an appropriately 
+typed Set.
+
+```
+{
+    DELETE: { letters: [ "d", "e" ] }
+}
+```
 
 ### Filter Object
 

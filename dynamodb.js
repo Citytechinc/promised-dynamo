@@ -441,6 +441,9 @@ var mapUpdatesToUpdateExpression = function( updates, updateCondition ) {
                 case 'SET':
                     addToUpdateExpressions( 'SET', '=', updates[ key ] );
                     break;
+                case 'DELETE':
+                    addToUpdateExpressions( 'DELETE', '', updates[ key ] );
+                    break;
                 default:
                     var setExpressions = {};
                     setExpressions[ key ] = updates[ key ];
