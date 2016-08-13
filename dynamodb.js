@@ -248,6 +248,14 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition,
                 }
 
                 return 'contains ( ' + namesForExpressionAttributes[ conditionKey ] + ', ' + valuesForExpressionAttributes[ values ] + ' )';
+            case 'begins_with':
+                if ( !valuesForExpressionAttributes[ values ] ) {
+                    valuesForExpressionAttributes[ values ] = ':' + expressionAttributeValuesCount;
+                    expressionAttributeValues[ ':' + expressionAttributeValuesCount ] = values;
+                    expressionAttributeValuesCount += 1;
+                }
+
+                return 'begins_with ( ' + namesForExpressionAttributes[ conditionKey ] + ', ' + valuesForExpressionAttributes[ values ] + ' )';
             default:
                 throw new Error( 'Invalid operator ' + operator + ' for key ' + conditionKey );
         }
@@ -489,6 +497,9 @@ var mapUpdatesToUpdateExpression = function( updates, updateCondition ) {
 
 };
 
+/**
+ * @Deprecated
+ */
 var keyConditionForKeyConditionString = function( condition, keyType ) {
 
     var conditionParts = condition.split( ' ' );
@@ -506,6 +517,19 @@ var keyConditionForKeyConditionString = function( condition, keyType ) {
     } );
 
     return keyCondition;
+
+};
+
+var keyConditionExpressionForHashAndRange = function( hashKey, hashValue, rangeKey, range, valueCountStart, nameCountStart ) {
+
+    var conditionDefinition = {};
+    conditionDefinition[ hashKey ] = hashValue;
+
+    if ( rangeKey && range ) {
+        conditionDefinition[ rangeKey ] = range;
+    }
+
+    return mapConditionDefinitionToConditionExpression( conditionDefinition, valueCountStart, nameCountStart );
 
 };
 
@@ -650,8 +674,6 @@ var DynamoDb = function( o, tables ) {
                 tableDefinitionDeferred.reject( err );
             }
             else {
-                console.log( JSON.stringify( data ) );
-                console.log( data.Table.TableArn );
                 var attributeDefinitions = {};
                 var secondaryIndices = {};
                 var primaryIndex = {};
@@ -734,7 +756,7 @@ var DynamoDb = function( o, tables ) {
 
                 var queryOptions = {
                     TableName: currentTable,
-                    KeyConditions: {}
+                    KeyConditionExpression: ""
                 };
 
                 var queryable = {
@@ -784,11 +806,34 @@ var DynamoDb = function( o, tables ) {
                                     queryOptions.IndexName = index;
                                 }
 
-                                queryOptions.KeyConditions[ queryIndex.key ] = keyConditionForKeyConditionString( hash, queryIndex.keyType );
+                                queryOptions.ExpressionAttributeValues = queryOptions.ExpressionAttributeValues || {};
+                                queryOptions.ExpressionAttributeNames = queryOptions.ExpressionAttributeNames || {};
 
-                                if ( range && queryIndex.range ) {
-                                    queryOptions.KeyConditions[ queryIndex.range ] = keyConditionForKeyConditionString( range, queryIndex.rangeType );
-                                }
+                                var keyConditionExpression = keyConditionExpressionForHashAndRange(
+                                    queryIndex.key,
+                                    hash,
+                                    queryIndex.range,
+                                    range,
+                                    Object.keys( queryOptions.ExpressionAttributeValues ).length,
+                                    Object.keys( queryOptions.ExpressionAttributeNames ).length );
+                                queryOptions.KeyConditionExpression = keyConditionExpression.conditionExpression;
+
+                                Object.keys( keyConditionExpression.expressionAttributeNames ).forEach( function( currentExpressionAttributeName ) {
+                                    queryOptions.ExpressionAttributeNames[ currentExpressionAttributeName ] = keyConditionExpression.expressionAttributeNames[ currentExpressionAttributeName ];
+                                } );
+                                Object.keys( keyConditionExpression.expressionAttributeValues ).forEach( function( currentExpressionAttributeValue ) {
+                                    queryOptions.ExpressionAttributeValues[ currentExpressionAttributeValue ] = keyConditionExpression.expressionAttributeValues[ currentExpressionAttributeValue ];
+                                } );
+
+                                /*
+                                 queryOptions.KeyConditions[ queryIndex.key ] = keyConditionForKeyConditionString( hash, queryIndex.keyType );
+
+                                 if ( range && queryIndex.range ) {
+                                 queryOptions.KeyConditions[ queryIndex.range ] = keyConditionForKeyConditionString( range, queryIndex.rangeType );
+                                 }
+                                 */
+                                console.log( 'HI' );
+                                console.log( JSON.stringify( queryOptions ) );
 
                                 dynamodb.query( queryOptions, function( err, data ) {
 

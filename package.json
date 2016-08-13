@@ -1,6 +1,6 @@
 {
   "name": "promised-dynamo",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "A promise based wrapper around the DynamoDB AWS SDK",
   "main": "dynamodb.js",
   "author": "CID10",
@@ -19,7 +19,7 @@
     "Paul Michelotti <paul.michelotti@icfi.com>"
   ],
   "dependencies": {
-    "aws-sdk": "^2.4.0",
+    "aws-sdk": "^2.5.0",
     "q": "^1.4.1"
   }
 }
