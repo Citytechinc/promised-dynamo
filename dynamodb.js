@@ -814,8 +814,8 @@ var DynamoDb = function( o, tables ) {
                                     hash,
                                     queryIndex.range,
                                     range,
-                                    Object.keys( queryOptions.ExpressionAttributeValues ).length,
-                                    Object.keys( queryOptions.ExpressionAttributeNames ).length );
+                                    Object.keys( queryOptions.ExpressionAttributeValues ).length + 1,
+                                    Object.keys( queryOptions.ExpressionAttributeNames ).length + 1 );
                                 queryOptions.KeyConditionExpression = keyConditionExpression.conditionExpression;
 
                                 Object.keys( keyConditionExpression.expressionAttributeNames ).forEach( function( currentExpressionAttributeName ) {
