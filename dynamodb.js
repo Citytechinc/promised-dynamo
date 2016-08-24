@@ -658,6 +658,20 @@ var DynamoDb = function( o, tables ) {
 
         return deferred.promise;
     };
+    
+    this.describeTable = function( name ) {
+        var deferred = Q.defer();
+        dynamodb.describeTable( {
+            TableName: name
+        }, function( err, data ) {
+            if (err) {
+                return deferred.reject( err );
+            }
+
+            return deferred.resolve( data.Table );
+        } );
+        return deferred.promise;
+    };
 
     tables.forEach( function( currentTableConfiguration ) {
 
