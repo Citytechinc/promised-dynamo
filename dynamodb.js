@@ -1059,7 +1059,7 @@ var DynamoDb = function( o, tables ) {
              */
             updateItem: function( hash, itemRange, itemUpdates, o ) {
 
-                var updates = typeof itemRange === 'object' ? itemRange : itemUpdates;
+                var updates = typeof itemRange === 'object' && itemRange != null ? itemRange : itemUpdates;
                 var range = typeof itemRange === 'string' ? itemRange : null;
                 var options = ( typeof itemRange === 'string' ? o : itemUpdates ) || {};
 
