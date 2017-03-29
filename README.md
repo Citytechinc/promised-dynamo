@@ -402,6 +402,9 @@ The later of these forms implicitly uses the "=" operator.  The following are va
 * IN - Expects an array of values
 * BETWEEN - Expects an array containing exactly two values where the first value is the bottom of the range and the later value is the top of the range
 * CONTAINS - Expects a single value
+* begins_with - Expects a single value
+* attribute_exists - Expects no value
+* attribute_not_exists - Expects no value
 
 #### Composite Expression Definitions
 
@@ -524,3 +527,39 @@ Enumeration of valid option values for the `returnValues` option.
 * `dynamoDb.valuesOptions.UPDATEDOLD`
 * `dynamoDb.valuesOptions.ALLNEW`
 * `dynamoDb.valuesOptions.UPDATEDNEW`
+
+### Common Recipes
+
+#### Conditional PutItem
+
+By default, putItem will completely replace a record if a record with the same partition 
+and sort key combination already exists.  It is common to want to only add an item if 
+the item does not already exist.  This can be accomplished with a conditionExpression 
+applied to the putItem command.
+
+```
+dynamodb.tablename.putItem( {
+    id: "abc123",
+    email: "test@example.com",
+    familyName: "Last Name",
+    givenName: "First Name"
+}, {
+    conditionExpression: {
+        "id" : { "attribute_not_exists": true }
+    }
+} );
+```
+
+#### Conditional UpdateItem
+
+Similar to the conditional PutItem, UpdateItem can be conditioned based on the presence 
+or absence of keys and values.  Consider the case where you only want to allow a user 
+to set a certain value once.
+
+```
+dynamodb.tablename.updateItem( 'abc123', { property: "value" }, {
+    conditionExpression: {
+        property: { "attribute_not_exists": true }
+    }
+} )
+```

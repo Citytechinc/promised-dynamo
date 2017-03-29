@@ -256,6 +256,10 @@ var mapConditionDefinitionToConditionExpression = function( conditionDefinition,
                 }
 
                 return 'begins_with ( ' + namesForExpressionAttributes[ conditionKey ] + ', ' + valuesForExpressionAttributes[ values ] + ' )';
+            case 'attribute_exists':
+                return 'attribute_exists ( ' + namesForExpressionAttributes[ conditionKey ] + ' )';
+            case 'attribute_not_exists':
+                return 'attribute_not_exists ( ' + namesForExpressionAttributes[ conditionKey ] + ' )';
             default:
                 throw new Error( 'Invalid operator ' + operator + ' for key ' + conditionKey );
         }
