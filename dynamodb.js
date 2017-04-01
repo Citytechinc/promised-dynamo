@@ -662,7 +662,7 @@ var DynamoDb = function( o, tables ) {
 
         return deferred.promise;
     };
-    
+
     this.describeTable = function( name ) {
         var deferred = Q.defer();
         dynamodb.describeTable( {
@@ -1063,9 +1063,9 @@ var DynamoDb = function( o, tables ) {
              */
             updateItem: function( hash, itemRange, itemUpdates, o ) {
 
-                var updates = typeof itemRange === 'object' ? itemRange : itemUpdates;
-                var range = typeof itemRange === 'string' ? itemRange : null;
-                var options = ( typeof itemRange === 'string' ? o : itemUpdates ) || {};
+                var updates = typeof itemRange === 'object' && itemRange != null ? itemRange : itemUpdates;
+                var range = typeof itemRange === 'string' || itemRange === null ? itemRange : null;
+                var options = ( typeof itemRange === 'string' || itemRange === null ? o : itemUpdates ) || {};
 
                 return tableDefinitionPromise.then( function( tableDefinition ) {
 
