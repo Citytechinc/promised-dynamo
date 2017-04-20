@@ -10,18 +10,20 @@ limitations below call out some of current omissions and works in progress.
 ### Instantiation
 
 ```
-DynamoDB( options, tables )
+new DynamoDB( options, tables )
 ```
 
 ```
-var dynamodb = new require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
+const DynamoDB = require( 'promised-dynamo' );
+const dynamodb = new DynamoDB( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'tablename', 'anothertablename' ] );
 ```
 
 Or
 
 ```
-var AWS = require( 'aws-sdk' );
-var dynamodb = new require( 'promised-dynamo' )( { db: new AWS.DynamoDB() }, [ 'tablename', 'anothertablename' ] );
+const AWS = require( 'aws-sdk' );
+const DynamoDB = require( 'promised-dynamo' );
+const dynamodb = new DynamoDB( { db: new AWS.DynamoDB() }, [ 'tablename', 'anothertablename' ] );
 ```
 
 #### Options
@@ -43,7 +45,8 @@ If a string is provided as a table definition it is expected to be the name of a
 table will be accessible at a property with the same name as the table.  For example, 
 
 ```
-var dynamodb = require( 'promised-dynamo' )( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'mytable' ] );
+const DynamoDB = require( 'promised-dynamo' );
+const dynamodb = new DynamoDB( { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, [ 'mytable' ] );
 
 dynamodb.mytable.getItem( 'abc' )
     .then( function( item ) {
@@ -58,7 +61,8 @@ definition indicates both the name of the DynamoDB table and the property name v
 on the resultant object.  For example,
 
 ```
-var dynamodb = require( 'promised-dynamo' )( 
+const DynamoDB = require( 'promised-dynamo' );
+const dynamodb = new DynamoDB( 
     { accessKeyId: "ABCDEFGHIJK", secretAccessKey: "abc123", region: "us-east-1" }, 
     [ { name: "dev-myTable", alias: "mytable" } ] );
     
